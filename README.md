@@ -1,48 +1,45 @@
 // === SIH Prototype: Disaster Management Gadget ===
-// ESP32 + GSM (SIM800) + Alarm + Ultrasonic + Push Button
-// Author: Your Team Name
-// Purpose: Household disaster alert + survivor presence ping
-// ----------------------------------------------------------
+
 
 #define HELP_CENTER_NUMBER "+911234567890"   
 #define DEVICE_ID "VILLAGEX-HOUSE12"         
 
-// GSM Pins
+
 #define GSM_RX_PIN 16 
 #define GSM_TX_PIN 17 
 #define GSM_BAUD   115200
 
-// Gadget Pins
+
 #define ALARM_PIN       18         
 #define ULTRASONIC_PIN  19    
 #define BUTTON_PIN      21        
 #define LED_PIN         2            
 
-// Globals
+
 bool alertActive = false;
 unsigned long alertActivatedAt = 0;
 const unsigned long ALARM_DURATION = 5 * 60 * 1000UL; // 5 min
 
 HardwareSerial SerialAT(1);
 
-// === Setup ===
+
 void setup() {
   Serial.begin(115200);
   Serial.println("\n[BOOT] Disaster Gadget Initializing...");
 
-  // Pin setup
+  
   pinMode(ALARM_PIN, OUTPUT); digitalWrite(ALARM_PIN, LOW);
   pinMode(ULTRASONIC_PIN, OUTPUT);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   pinMode(LED_PIN, OUTPUT); digitalWrite(LED_PIN, LOW);
 
-  // Ultrasonic emitter setup (40kHz PWM)
+  
   const int channel = 0;
   ledcSetup(channel, 40000, 8);
   ledcAttachPin(ULTRASONIC_PIN, channel);
   ledcWrite(channel, 0); // off initially
 
-  // GSM init
+  
   SerialAT.begin(GSM_BAUD, SERIAL_8N1, GSM_RX_PIN, GSM_TX_PIN);
   delay(300);
   initModem();
@@ -50,16 +47,16 @@ void setup() {
   Serial.println("[READY] Gadget is Online.");
 }
 
-// === Main Loop ===
+
 void loop() {
   checkSMS();          // Listen for disaster alerts
   checkButton();       // Survivor "I'm Alive" response
   manageAlertState();  // Handle siren + ultrasonic timing
 }
 
-// === Functions ===
 
-// Initialize GSM Modem
+
+
 void initModem() {
   Serial.println("[GSM] Initializing...");
   SerialAT.println("AT");
@@ -69,7 +66,7 @@ void initModem() {
   Serial.println("[GSM] Ready for SMS.");
 }
 
-// Poll incoming SMS for alerts
+
 void checkSMS() {
   while (SerialAT.available()) {
     String line = SerialAT.readStringUntil('\n');
@@ -82,7 +79,7 @@ void checkSMS() {
   }
 }
 
-// Handle Alert Activation
+
 void triggerAlert() {
   Serial.println("[ALERT] Disaster Alert Received!");
   digitalWrite(ALARM_PIN, HIGH);
@@ -92,7 +89,7 @@ void triggerAlert() {
   alertActivatedAt = millis();
 }
 
-// Manage alert timeout
+
 void manageAlertState() {
   if (alertActive && millis() - alertActivatedAt > ALARM_DURATION) {
     Serial.println("[ALERT] Auto timeout reached. Turning OFF alarm.");
@@ -103,16 +100,16 @@ void manageAlertState() {
   }
 }
 
-// Survivor push button
+
 void checkButton() {
   if (digitalRead(BUTTON_PIN) == LOW) {
     Serial.println("[BUTTON] Survivor present. Sending ALIVE SMS...");
     sendAliveSMS();
-    delay(1000); // debounce
+    delay(1000); 
   }
 }
 
-// Send "I AM ALIVE" to Help Center
+
 void sendAliveSMS() {
   SerialAT.print("AT+CMGS=\"");
   SerialAT.print(HELP_CENTER_NUMBER);
